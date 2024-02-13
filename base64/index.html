@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #image-container,
+    #image-container + div {
+      display: none;
+    }
+    #image-container:has(img[src*="base64"]),
+    #image-container:has(img[src*="base64"]) + div {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <button type="button" data-load-image-file>Load Image File</button>
+    <button type="button" data-load-base64-file>Load Base64 File</button>
+  </div>
+  <div id="image-container">
+    <img src="" width="100" height="100" data-img />
+  </div>
+  <div>
+    <button type="button" data-download-base64>Download Base64</button>
+  </div>
+  <script>
+    const toBase64 = (blob) => {
+      return new Promise((resolve, reject) => {
+
+        const reader = new FileReader();
+
+        reader.addEventListener("load", () => {
+          resolve(reader.result);
+        });
+        reader.addEventListener("error", reject, false);
+        reader.readAsDataURL(blob);
+      });
+    };
+
+    const getFile = async (options) => {
+      const [fileHandle] = await window.showOpenFilePicker(options);
+      return fileHandle.getFile();
+    };
+
+    const loadFile = async () => {
+      const file = await getFile({
+        startIn: 'downloads',
+        types: [{
+          description: "Images",
+          accept: {
+            "image/*": [".png", ".gif", ".jpeg", ".jpg"],
+          },
+        }],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+      const base64 = await toBase64(file);
+
+      document.querySelector('[data-img]').src = base64;
+    };
+
+    const saveTextFile = async (txt) => {
+      const fileHandle = await window.showSaveFilePicker({
+        startIn: 'downloads',
+        types: [{
+          description: "Text",
+          accept: {
+            "text/plain": [".txt"],
+          },
+        }],
+        excludeAcceptAllOption: true,
+      });
+      const writableStream = await fileHandle.createWritable();
+
+      await writableStream.write(txt);
+      await writableStream.close();
+    };
+
+    const downloadBase64 = async () => {
+      const base64 = document.querySelector('[data-img]').src;
+      saveTextFile(base64);
+    };
+
+    const loadBase64File = async () => {
+      const file = await getFile({
+        startIn: 'downloads',
+        types: [{
+          description: "Text",
+          accept: {
+            "text/plain": [".txt"],
+          },
+        }],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+      const base64 = await file.text();
+
+      document.querySelector('[data-img]').src = base64;
+    };
+
+    const main = () => {
+      document
+        .querySelector('[data-load-image-file]')
+        .addEventListener('click', loadFile);
+
+      document
+        .querySelector('[data-download-base64]')
+        .addEventListener('click', downloadBase64);
+
+      document
+        .querySelector('[data-load-base64-file]')
+        .addEventListener('click', loadBase64File);
+    };
+
+    main();
+  </script>
+</body>
+
+</html>
