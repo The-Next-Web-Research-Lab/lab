@@ -6,12 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <style>
-    #image-container,
-    #image-container + div {
+    .media-container {
       display: none;
     }
-    #image-container:has(img[src*="base64"]),
-    #image-container:has(img[src*="base64"]) + div {
+
+    .media-container:has([src*="b"]) {
       display: block;
     }
   </style>
@@ -20,13 +19,17 @@
 <body>
   <div>
     <button type="button" data-load-image-file>Load Image File</button>
-    <button type="button" data-load-base64-file>Load Base64 File</button>
+    <button type="button" data-load-base64-image-file>Load Base64 Image File</button>
+    <button type="button" data-load-video-file>Load Video File</button>
+    <button type="button" data-load-base64-video-file>Load Base64 Video File</button>
   </div>
-  <div id="image-container">
-    <img src="" width="100" height="100" data-img />
+  <div class="media-container">
+    <img src="" width="500" data-img />
+    <button type="button" data-download-base64-image>Download Base64 Image</button>
   </div>
-  <div>
-    <button type="button" data-download-base64>Download Base64</button>
+  <div class="media-container">
+    <video src="" width="500" controls data-video></video>
+    <button type="button" data-download-base64-video>Download Base64 Video</button>
   </div>
   <script>
     const toBase64 = (blob) => {
@@ -47,21 +50,38 @@
       return fileHandle.getFile();
     };
 
-    const loadFile = async () => {
+    const getFileByBase64 = async (types) => {
       const file = await getFile({
         startIn: 'downloads',
-        types: [{
-          description: "Images",
-          accept: {
-            "image/*": [".png", ".gif", ".jpeg", ".jpg"],
-          },
-        }],
+        types,
         excludeAcceptAllOption: true,
         multiple: false,
       });
       const base64 = await toBase64(file);
 
+      return base64;
+    };
+
+    const loadImageFile = async () => {
+      const base64 = await getFileByBase64([{
+        description: "Images",
+        accept: {
+          "image/*": [".png", ".gif", ".jpeg", ".jpg"],
+        },
+      }]);
+
       document.querySelector('[data-img]').src = base64;
+    };
+
+    const loadVideoFile = async () => {
+      const base64 = await getFileByBase64([{
+        description: "Video",
+        accept: {
+          "video/*": [".mp4"],
+        },
+      }]);
+
+      document.querySelector('[data-video]').src = base64;
     };
 
     const saveTextFile = async (txt) => {
@@ -81,12 +101,7 @@
       await writableStream.close();
     };
 
-    const downloadBase64 = async () => {
-      const base64 = document.querySelector('[data-img]').src;
-      saveTextFile(base64);
-    };
-
-    const loadBase64File = async () => {
+    const loadTextFile = async () => {
       const file = await getFile({
         startIn: 'downloads',
         types: [{
@@ -100,21 +115,43 @@
       });
       const base64 = await file.text();
 
+      return base64;
+    }
+
+    const downloadBase64Image = async () => {
+      const base64 = document.querySelector('[data-img]').src;
+      saveTextFile(base64);
+    };
+
+    const downloadBase64Video = async () => {
+      const base64 = document.querySelector('[data-video]').src;
+      saveTextFile(base64);
+    };
+
+    const loadBase64ImageFile = async () => {
+      const base64 = await loadTextFile();
       document.querySelector('[data-img]').src = base64;
     };
 
+    const loadBase64VideoFile = async () => {
+      const base64 = await loadTextFile();
+      document.querySelector('[data-video]').src = base64;
+    };
+
+    const onClick = (selector, handler) => {
+      document
+        .querySelector(selector)
+        .addEventListener('click', handler);
+    };
+
     const main = () => {
-      document
-        .querySelector('[data-load-image-file]')
-        .addEventListener('click', loadFile);
+      onClick('[data-load-image-file]', loadImageFile);
+      onClick('[data-download-base64-image]', downloadBase64Image);
+      onClick('[data-load-base64-image-file]', loadBase64ImageFile);
 
-      document
-        .querySelector('[data-download-base64]')
-        .addEventListener('click', downloadBase64);
-
-      document
-        .querySelector('[data-load-base64-file]')
-        .addEventListener('click', loadBase64File);
+      onClick('[data-load-video-file]', loadVideoFile);
+      onClick('[data-download-base64-video]', downloadBase64Video);
+      onClick('[data-load-base64-video-file]', loadBase64VideoFile);
     };
 
     main();
