@@ -32,126 +32,132 @@
     <button type="button" data-download-base64-video>Download Base64 Video</button>
   </div>
   <script>
-    const toBase64 = (blob) => {
-      return new Promise((resolve, reject) => {
-
-        const reader = new FileReader();
-
-        reader.addEventListener("load", () => {
-          resolve(reader.result);
-        });
-        reader.addEventListener("error", reject, false);
-        reader.readAsDataURL(blob);
-      });
-    };
-
-    const getFile = async (options) => {
-      const [fileHandle] = await window.showOpenFilePicker(options);
-      return fileHandle.getFile();
-    };
-
-    const getFileByBase64 = async (types) => {
-      const file = await getFile({
+    const CONSTANTS = {
+      OPTIONS: {
         startIn: 'downloads',
-        types,
         excludeAcceptAllOption: true,
-        multiple: false,
-      });
-      const base64 = await toBase64(file);
+      },
+      TEXT_TYPES: [{
+        description: "Text",
+        accept: {
+          "text/plain": [".txt"],
+        },
+      }]
+    };
 
-      return base64;
+    const $DOM = {
+      $: selector => document.querySelector(selector),
+      onClick: (selector, handler) => {
+        $DOM.$(selector)
+          .addEventListener('click', handler);
+      },
+      setSrcAttr: (selector, src) => {
+        $DOM.$(selector).src = src;
+      },
+      getSrcAttr: (selector) => {
+        return $DOM.$(selector).src;
+      }
+    };
+
+    const $Helper = {
+      toBase64: (blob) => {
+        return new Promise((resolve, reject) => {
+
+          const reader = new FileReader();
+
+          reader.addEventListener("load", () => {
+            resolve(reader.result);
+          });
+          reader.addEventListener("error", reject, false);
+          reader.readAsDataURL(blob);
+        });
+      },
+      getFile: async (options) => {
+        const [fileHandle] = await window.showOpenFilePicker(options);
+        return fileHandle.getFile();
+      },
+      getFileByBase64: async (types) => {
+        const file = await $Helper.getFile({
+          ...CONSTANTS.OPTIONS,
+          multiple: false,
+          types,
+        });
+        const base64 = await $Helper.toBase64(file);
+
+        return base64;
+      },
+      saveTextFile: async (txt) => {
+        const fileHandle = await window.showSaveFilePicker({
+          ...CONSTANTS.OPTIONS,
+          types: CONSTANTS.TEXT_TYPES,
+        });
+        const writableStream = await fileHandle.createWritable();
+
+        await writableStream.write(txt);
+        await writableStream.close();
+      },
+      loadTextFile: async () => {
+        const file = await $Helper.getFile({
+          ...CONSTANTS.OPTIONS,
+          multiple: false,
+          types: CONSTANTS.TEXT_TYPES,
+        });
+        const base64 = await file.text();
+
+        return base64;
+      }
     };
 
     const loadImageFile = async () => {
-      const base64 = await getFileByBase64([{
+      const base64 = await $Helper.getFileByBase64([{
         description: "Images",
         accept: {
           "image/*": [".png", ".gif", ".jpeg", ".jpg"],
         },
       }]);
 
-      document.querySelector('[data-img]').src = base64;
+      $DOM.setSrcAttr('[data-img]', base64);
     };
 
     const loadVideoFile = async () => {
-      const base64 = await getFileByBase64([{
+      const base64 = await $Helper.getFileByBase64([{
         description: "Video",
         accept: {
           "video/*": [".mp4"],
         },
       }]);
 
-      document.querySelector('[data-video]').src = base64;
+      $DOM.setSrcAttr('[data-video]', base64);
     };
-
-    const saveTextFile = async (txt) => {
-      const fileHandle = await window.showSaveFilePicker({
-        startIn: 'downloads',
-        types: [{
-          description: "Text",
-          accept: {
-            "text/plain": [".txt"],
-          },
-        }],
-        excludeAcceptAllOption: true,
-      });
-      const writableStream = await fileHandle.createWritable();
-
-      await writableStream.write(txt);
-      await writableStream.close();
-    };
-
-    const loadTextFile = async () => {
-      const file = await getFile({
-        startIn: 'downloads',
-        types: [{
-          description: "Text",
-          accept: {
-            "text/plain": [".txt"],
-          },
-        }],
-        excludeAcceptAllOption: true,
-        multiple: false,
-      });
-      const base64 = await file.text();
-
-      return base64;
-    }
 
     const downloadBase64Image = async () => {
-      const base64 = document.querySelector('[data-img]').src;
-      saveTextFile(base64);
+      const base64 = $DOM.getSrcAttr('[data-img]');
+      $Helper.saveTextFile(base64);
     };
 
     const downloadBase64Video = async () => {
-      const base64 = document.querySelector('[data-video]').src;
-      saveTextFile(base64);
+      const base64 = $DOM.getSrcAttr('[data-video]');
+      $Helper.saveTextFile(base64);
     };
 
     const loadBase64ImageFile = async () => {
-      const base64 = await loadTextFile();
-      document.querySelector('[data-img]').src = base64;
+      const base64 = await $Helper.loadTextFile();
+      $DOM.setSrcAttr('[data-img]', base64);
     };
 
     const loadBase64VideoFile = async () => {
-      const base64 = await loadTextFile();
-      document.querySelector('[data-video]').src = base64;
-    };
-
-    const onClick = (selector, handler) => {
-      document
-        .querySelector(selector)
-        .addEventListener('click', handler);
+      const base64 = await $Helper.loadTextFile();
+      $DOM.setSrcAttr('[data-video]', base64);
     };
 
     const main = () => {
-      onClick('[data-load-image-file]', loadImageFile);
-      onClick('[data-download-base64-image]', downloadBase64Image);
-      onClick('[data-load-base64-image-file]', loadBase64ImageFile);
+      $DOM.onClick('[data-load-image-file]', loadImageFile);
+      $DOM.onClick('[data-download-base64-image]', downloadBase64Image);
+      $DOM.onClick('[data-load-base64-image-file]', loadBase64ImageFile);
 
-      onClick('[data-load-video-file]', loadVideoFile);
-      onClick('[data-download-base64-video]', downloadBase64Video);
-      onClick('[data-load-base64-video-file]', loadBase64VideoFile);
+      $DOM.onClick('[data-load-video-file]', loadVideoFile);
+      $DOM.onClick('[data-download-base64-video]', downloadBase64Video);
+      $DOM.onClick('[data-load-base64-video-file]', loadBase64VideoFile);
     };
 
     main();
