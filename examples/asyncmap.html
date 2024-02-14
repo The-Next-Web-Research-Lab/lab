@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+
+<input 
+  type="file"
+  accept=".txt"
+  oninput="handleOnInput(event)"
+  multiple
+/>
+
+<script>
+  const handleOnInput = async (event) => {
+    const files = event.target.files;
+    const texts = await mapAsync(files, file => file.text());
+
+    console.log(texts);
+  };
+  
+  const mapAsync = async (arr, mapper) => {
+    const newArr = [];
+
+    for (const item of arr) {
+      newArr.push(await mapper(item));
+    }
+
+    return newArr;
+  };
+</script>
+
+</body>
+</html>

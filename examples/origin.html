@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+
+<input 
+  type="file"
+  accept=".txt"
+  oninput="handleOnInput(event)"
+  multiple
+/>
+
+<script>
+  const handleOnInput = async (event) => {
+    const files = event.target.files;
+    const texts = [];
+
+    for (const file of files) {
+      texts.push(await file.text());
+    }
+
+    console.log(texts);
+  };
+</script>
+
+</body>
+
+</html>
