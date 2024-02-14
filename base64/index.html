@@ -85,6 +85,15 @@
     };
 
     const $Helper = {
+      asyncMap: async (arr, mapper) => {
+        const newArr = [];
+
+        for (const item of arr) {
+          newArr.push(await mapper(item))
+        }
+
+        return newArr;
+      },
       toBase64: (blob) => {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -99,11 +108,7 @@
       getFiles: async (options) => {
         if (window.showOpenFilePicker) {
           const fileHandles = await window.showOpenFilePicker(options);
-          const files = [];
-
-          for (const filehandle of fileHandles) {
-            files.push(await filehandle.getFile())
-          }
+          const files = $Helper.asyncMap(fileHandles, handle => handle.getFile());
 
           return files;
         } else {
@@ -180,11 +185,7 @@
           multiple: true,
           types: CONSTANTS.TEXT_TYPES,
         });
-        const texts = [];
-
-        for (const file of files) {
-          texts.push(await file.text());
-        }
+        const texts = $Helper.asyncMap(files, file => file.text());
 
         return texts;
       }
