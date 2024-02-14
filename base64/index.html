@@ -6,12 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <style>
-    .media-container {
+    .media-container,
+    .media-container button,
+    .media-container video {
       display: none;
     }
 
-    .media-container:has([src*="b"]) {
-      display: block;
+    .media-container:has([src*="b"]),
+    .media-container [src*="b"],
+    .media-container [src*="b"]+button {
+      display: initial;
     }
   </style>
 </head>
@@ -61,7 +65,23 @@
         Object
           .assign(document.createElement(name), props)
           .click();
-      }
+      },
+      appendFragment: ({
+        arr,
+        mapper,
+        target
+      }) => {
+        const docFrag = document.createDocumentFragment();
+
+        arr.forEach(item => {
+          const elem = mapper(item);
+          docFrag.appendChild(elem);
+        });
+
+        target.appendChild(docFrag);
+      },
+      clone: (elem) => elem.cloneNode(),
+      parent: (elem) => elem.parentNode
     };
 
     const $Helper = {
@@ -76,10 +96,16 @@
           reader.readAsDataURL(blob);
         });
       },
-      getFile: async (options) => {
+      getFiles: async (options) => {
         if (window.showOpenFilePicker) {
-          const [fileHandle] = await window.showOpenFilePicker(options);
-          return fileHandle.getFile();
+          const fileHandles = await window.showOpenFilePicker(options);
+          const files = [];
+
+          for (const filehandle of fileHandles) {
+            files.push(await filehandle.getFile())
+          }
+
+          return files;
         } else {
           const {
             multiple,
@@ -98,10 +124,12 @@
               accept,
               type: 'file',
               oninput: (event) => {
-                const [file] = event.target.files;
+                const {
+                  files
+                } = event.target;
 
-                if (file) {
-                  resolve(file);
+                if (files[0]) {
+                  resolve(files);
                 } else {
                   reject();
                 }
@@ -114,7 +142,7 @@
         }
       },
       getFileByBase64: async (types) => {
-        const file = await $Helper.getFile({
+        const [file] = await $Helper.getFiles({
           ...CONSTANTS.OPTIONS,
           multiple: false,
           types,
@@ -146,15 +174,19 @@
           });
         }
       },
-      loadTextFile: async () => {
-        const file = await $Helper.getFile({
+      loadTextFiles: async () => {
+        const files = await $Helper.getFiles({
           ...CONSTANTS.OPTIONS,
-          multiple: false,
+          multiple: true,
           types: CONSTANTS.TEXT_TYPES,
         });
-        const base64 = await file.text();
+        const texts = [];
 
-        return base64;
+        for (const file of files) {
+          texts.push(await file.text());
+        }
+
+        return texts;
       }
     };
 
@@ -190,24 +222,44 @@
       $Helper.saveTextFile(base64);
     };
 
-    const loadBase64ImageFile = async () => {
-      const base64 = await $Helper.loadTextFile();
-      $DOM.setSrcAttr('[data-img]', base64);
+    const loadBase64ImageFiles = async () => {
+      const texts = await $Helper.loadTextFiles();
+      const imageOrigin = $DOM.$('[data-img]');
+
+      $DOM.appendFragment({
+        arr: texts,
+        mapper: (item) => {
+          return Object.assign($DOM.clone(imageOrigin), {
+            src: item
+          });
+        },
+        target: $DOM.parent(imageOrigin),
+      });
     };
 
-    const loadBase64VideoFile = async () => {
-      const base64 = await $Helper.loadTextFile();
-      $DOM.setSrcAttr('[data-video]', base64);
+    const loadBase64VideoFiles = async () => {
+      const texts = await $Helper.loadTextFiles();
+      const videoOrigin = $DOM.$('[data-video]');
+
+      $DOM.appendFragment({
+        arr: texts,
+        mapper: (item) => {
+          return Object.assign($DOM.clone(videoOrigin), {
+            src: item
+          });
+        },
+        target: $DOM.parent(videoOrigin)
+      })
     };
 
     const main = () => {
       $DOM.onClick('[data-load-image-file]', loadImageFile);
       $DOM.onClick('[data-download-base64-image]', downloadBase64Image);
-      $DOM.onClick('[data-load-base64-image-file]', loadBase64ImageFile);
+      $DOM.onClick('[data-load-base64-image-file]', loadBase64ImageFiles);
 
       $DOM.onClick('[data-load-video-file]', loadVideoFile);
       $DOM.onClick('[data-download-base64-video]', downloadBase64Video);
-      $DOM.onClick('[data-load-base64-video-file]', loadBase64VideoFile);
+      $DOM.onClick('[data-load-base64-video-file]', loadBase64VideoFiles);
     };
 
     main();
