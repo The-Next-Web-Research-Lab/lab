@@ -56,13 +56,17 @@
       },
       getSrcAttr: (selector) => {
         return $DOM.$(selector).src;
+      },
+      clickElement: (name, props) => {
+        Object
+          .assign(document.createElement(name), props)
+          .click();
       }
     };
 
     const $Helper = {
       toBase64: (blob) => {
         return new Promise((resolve, reject) => {
-
           const reader = new FileReader();
 
           reader.addEventListener("load", () => {
@@ -89,10 +93,10 @@
           ].flat().join(',');
 
           return new Promise((resolve, reject) => {
-            const fileElement = Object.assign(document.createElement('input'), {
-              type: 'file',
+            $DOM.clickElement('input', {
               multiple,
               accept,
+              type: 'file',
               oninput: (event) => {
                 const [file] = event.target.files;
 
@@ -106,8 +110,6 @@
                 reject();
               }
             });
-
-            fileElement.click();
           });
         }
       },
@@ -132,17 +134,16 @@
           await writableStream.write(txt);
           await writableStream.close();
         } else {
+          const download = `${Date.now()}.txt`;
           const textBlob = new Blob([txt], {
             type: 'text/plain'
           });
-          const url = URL.createObjectURL(textBlob);
+          const href = URL.createObjectURL(textBlob);
 
-          Object
-            .assign(document.createElement('a'), {
-              download: `${Date.now()}.txt`,
-              href: url
-            })
-            .click();
+          $DOM.clickElement('a', {
+            download,
+            href
+          });
         }
       },
       loadTextFile: async () => {
