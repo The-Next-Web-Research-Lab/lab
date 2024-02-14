@@ -73,8 +73,43 @@
         });
       },
       getFile: async (options) => {
-        const [fileHandle] = await window.showOpenFilePicker(options);
-        return fileHandle.getFile();
+        if (window.showOpenFilePicker) {
+          const [fileHandle] = await window.showOpenFilePicker(options);
+          return fileHandle.getFile();
+        } else {
+          const {
+            multiple,
+            types: [{
+              accept: originAccept
+            }]
+          } = options;
+          const accept = [
+            ...Object.keys(originAccept),
+            ...Object.values(originAccept),
+          ].flat().join(',');
+
+          return new Promise((resolve, reject) => {
+            const fileElement = Object.assign(document.createElement('input'), {
+              type: 'file',
+              multiple,
+              accept,
+              oninput: (event) => {
+                const [file] = event.target.files;
+
+                if (file) {
+                  resolve(file);
+                } else {
+                  reject();
+                }
+              },
+              oncancel: () => {
+                reject();
+              }
+            });
+
+            fileElement.click();
+          });
+        }
       },
       getFileByBase64: async (types) => {
         const file = await $Helper.getFile({
@@ -87,14 +122,28 @@
         return base64;
       },
       saveTextFile: async (txt) => {
-        const fileHandle = await window.showSaveFilePicker({
-          ...CONSTANTS.OPTIONS,
-          types: CONSTANTS.TEXT_TYPES,
-        });
-        const writableStream = await fileHandle.createWritable();
+        if (window.showSaveFilePicker) {
+          const fileHandle = await window.showSaveFilePicker({
+            ...CONSTANTS.OPTIONS,
+            types: CONSTANTS.TEXT_TYPES,
+          });
+          const writableStream = await fileHandle.createWritable();
 
-        await writableStream.write(txt);
-        await writableStream.close();
+          await writableStream.write(txt);
+          await writableStream.close();
+        } else {
+          const textBlob = new Blob([txt], {
+            type: 'text/plain'
+          });
+          const url = URL.createObjectURL(textBlob);
+
+          Object
+            .assign(document.createElement('a'), {
+              download: `${Date.now()}.txt`,
+              href: url
+            })
+            .click();
+        }
       },
       loadTextFile: async () => {
         const file = await $Helper.getFile({
